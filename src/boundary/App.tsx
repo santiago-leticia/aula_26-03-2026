@@ -1,12 +1,12 @@
-import { ReactElement, useState } from 'react';
+import { ReactElement, useEffect, useLayoutEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { Button, FlatList, ListRenderItemInfo, 
-  RefreshControl, StyleSheet, Text, TextInput, 
-  ToastAndroid, View } from 'react-native';
+  Modal, RefreshControl, ScrollView, StyleSheet, Text, TextInput, 
+  ToastAndroid, useColorScheme, View } from 'react-native';
 import { AntDesign as Icons } from '@expo/vector-icons';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import Contato from '../model/contato';
+import { Contato } from '../model/contato';
 import { useContato } from '../control/useContato';
 
 const {Screen, Navigator} = createBottomTabNavigator()

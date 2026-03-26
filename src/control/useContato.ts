@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useColorScheme } from "react-native";
-import Contato from "../model/contato";
+import {Contato, contatoSchema} from "../model/contato";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const useContato = ( mensagem : ( msg: string ) => void ) => {
@@ -20,16 +20,23 @@ const useContato = ( mensagem : ( msg: string ) => void ) => {
       } );
     
       const salvar = ( contato : Contato ) => {
-        const novoContador = contador + 1;
-        setLista( ( listaAntiga : Contato[] )=>{
-          contato.id = novoContador;
-          const novaLista = [...listaAntiga, contato];
-          const novaListaSerializada = JSON.stringify( novaLista );      
-          AsyncStorage.setItem("LISTA_CONTATOS", novaListaSerializada);
-          AsyncStorage.setItem("CONTADOR", novoContador.toString() );
-          return novaLista;
-        } );
-        setContador( novoContador );
+        contatoSchema.validate(contato)
+        .then( ()=> {
+            const novoContador = contador + 1;
+            setLista( ( listaAntiga : Contato[] )=>{
+            contato.id = novoContador;
+            const novaLista = [...listaAntiga, contato];
+            const novaListaSerializada = JSON.stringify( novaLista );      
+            AsyncStorage.setItem("LISTA_CONTATOS", novaListaSerializada);
+            AsyncStorage.setItem("CONTADOR", novoContador.toString() );
+            return novaLista;
+            } );
+            setContador( novoContador );
+            mensagem("Contato Salvo");
+        }).catch( (err : any ) => {
+            console.log( err );
+            mensagem(err.message)
+        })
       } 
     
       const pesquisar = ( nome : string ) : Contato | null => {
