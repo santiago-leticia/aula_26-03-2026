@@ -1,61 +1,74 @@
-import { ReactElement, useEffect, useLayoutEffect, useState } from 'react';
+import { ReactElement, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { Button, FlatList, ListRenderItemInfo, 
-  Modal, RefreshControl, ScrollView, StyleSheet, Text, TextInput, 
-  ToastAndroid, useColorScheme, View } from 'react-native';
+  RefreshControl, StyleSheet, Text, TextInput, 
+  ToastAndroid, View } from 'react-native';
 import { AntDesign as Icons } from '@expo/vector-icons';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Contato } from '../model/contato';
+import {Contato} from '../model/contato';
 import { useContato } from '../control/useContato';
+import CustomTextInput from '../components/CustomTextInput';
 
-const {Screen, Navigator} = createBottomTabNavigator()
+const {Screen, Navigator} = createBottomTabNavigator();
 
-const ContatoDetalhes = ( props : ListRenderItemInfo<Contato> ) : ReactElement => {
+interface ContatoDetalhesProps extends ListRenderItemInfo<Contato> {
+  onApagar : ( contato: Contato ) => void;
+  onEditar : ( contato: Contato ) => void;
+}
+
+// const ContatoDetalhes = ( props : ListRenderItemInfo<Contato> ) : ReactElement => {
+const ContatoDetalhes = ( { item : pessoa, onApagar, onEditar }
+: ContatoDetalhesProps ) : ReactElement => {
   return (
     <View style={{marginVertical: 10, marginHorizontal: 5,
-      backgroundColor: "lightgray", borderRadius: 20,
-      padding: 10}}>
-      <Text>{props.item.nome}</Text>
-      <Text>{props.item.telefone}</Text>
-      <Text>{props.item.email}</Text>
+      backgroundColor: "lightgray", borderRadius: 20, padding: 10, 
+      flexDirection: "row", justifyContent: "space-between"}}>
+      <View style={{flex: 4}}>
+        <Text>{pessoa.nome}</Text>
+        <Text>{pessoa.telefone}</Text>
+        <Text>{pessoa.email}</Text>
+      </View>
+      <View style={{flex: 1, flexDirection: "row", 
+        alignItems: "center", justifyContent: "space-around"}}>
+        <Icons name="delete" size={32} color="black" 
+          onPress={()=>onApagar( pessoa )}/>
+        <Icons name="edit" size={32} color="black"
+          onPress={()=>onEditar( pessoa )}/>
+      </View>
     </View>
   );
 }
 
 const ContatoFormulario = ( props : any ) => { 
-  const [nome, setNome] = useState<string>("");
-  const [telefone, setTelefone] = useState<string>("");
-  const [email, setEmail] = useState<string>("");  
   return (
     <View style={[props.estiloAtual.container, {justifyContent: "center"}]}>
-      <TextInput value={nome} placeholder="Nome Completo: "
-        onChangeText={setNome}
+      <CustomTextInput value={props.nome} placeholder="Nome Completo: "
+        onChangeText={props.setNome}
+        error = {props.nomeErro}
         style={props.estiloAtual.input}
         placeholderTextColor = {props.placeHolderColor}/>
-      <TextInput value={telefone} placeholder="Telefone: "
-        onChangeText={setTelefone}
+      <CustomTextInput value={props.telefone} placeholder="Telefone: "
+        onChangeText={props.setTelefone}
+        error = {props.telefoneErro}
         style={props.estiloAtual.input}
         placeholderTextColor = {props.placeHolderColor}/>
-      <TextInput value={email} placeholder="Email: "
-        onChangeText={setEmail}
+      <CustomTextInput value={props.email} placeholder="Email: "
+        onChangeText={props.setEmail}
+        error = {props.emailErro}
         style={props.estiloAtual.input}
         placeholderTextColor = {props.placeHolderColor}/>
       <Button title="Salvar" onPress={()=>{
-        const obj : Contato = { id : 0,
-          nome, telefone, email };
+        const obj : Contato = { id : null,
+          nome : props.nome, telefone: props.telefone, email: props.email };
         props.salvar( obj );
-        ToastAndroid.show("Contato Salvo", ToastAndroid.LONG);
-        setNome("");
-        setTelefone("");
-        setEmail("");
       }} />
       <Button title="Pesquisar" onPress={()=>{
-        const contato = props.pesquisar( nome );
+        const contato = props.pesquisar( props.nome );
         if (contato != null) {
-          setNome( contato.nome );
-          setTelefone( contato.telefone );
-          setEmail( contato.email );  
+          props.setNome( contato.nome );
+          props.setTelefone( contato.telefone );
+          props.setEmail( contato.email );  
         }
       }}/>
       <StatusBar style="auto" />
@@ -72,9 +85,18 @@ const ContatoListagem = ( props : any ) => {
           style={props.estiloAtual.input}
           placeholderTextColor = {props.placeHolderColor}/>
         <FlatList data = {props.listaFiltrada}
-          renderItem = { ContatoDetalhes }
+          renderItem = {
+            ( flatProps : ListRenderItemInfo<Contato> ) => 
+              <ContatoDetalhes {...flatProps} 
+                  onApagar={props.apagar} 
+                  onEditar={ (contato : Contato) => {
+                    props.editar(contato);
+                    props.navigation.navigate("Formulario");
+                  }} />}
+          /* renderItem = { ContatoDetalhes }
+           renderItem = { ( propsFlat )=> <ContatoDetalhes {...propsFlat}/>} */
           keyExtractor = { 
-          (contato: Contato) => `contato-${contato.id}`
+            (contato: Contato) => `contato-${contato.id}`
           }
           initialNumToRender={10}
           windowSize={9}
@@ -99,8 +121,10 @@ export default function App() {
   }
 
   const {isDark, setDark, filtro, setFiltro, listaFiltrada, 
-    lista, salvar, pesquisar, setLista, 
-    onRefresh, carregando} = useContato( mensagem )
+    lista, salvar, pesquisar, apagar, editar, setLista, 
+    onRefresh, carregando, 
+    nome, setNome, email, setEmail, telefone, setTelefone,
+    nomeErro, telefoneErro, emailErro} = useContato( mensagem )
 
   const estiloAtual = isDark ? estiloDark : estiloLight;
   const placeHolderColor = isDark ? "lightgray" : "darkgray";
@@ -118,14 +142,17 @@ export default function App() {
         <View style={estiloAtual.container}>
           <Navigator>
             <Screen name="Listagem">
-                { ()=><ContatoListagem 
+                { ( propsNavigation )=><ContatoListagem 
                   estiloAtual={estiloAtual}
                   filtro={filtro}
                   setFiltro={setFiltro}
+                  apagar = {apagar}
+                  editar = {editar}
                   listaFiltrada={listaFiltrada}
                   placeHolderColor={placeHolderColor}
                   onRefresh={onRefresh}
-                  loading={carregando}/> }
+                  loading={carregando}
+                  {...propsNavigation}/> }
             </Screen>
             <Screen name="Formulario">
                 { ()=><ContatoFormulario 
@@ -135,6 +162,15 @@ export default function App() {
                   pesquisar={pesquisar}
                   setLista={setLista}
                   setFiltro={setFiltro}
+                  nome={nome}
+                  setNome={setNome}
+                  telefone={telefone}
+                  setTelefone={setTelefone}
+                  email={email}
+                  setEmail={setEmail}
+                  nomeErro={nomeErro}
+                  telefoneErro={telefoneErro}
+                  emailErro={emailErro}
                   placeHolderColor={placeHolderColor}/> }
             </Screen>
           </Navigator>
